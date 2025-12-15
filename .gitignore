@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+
+# Env
+.venv/
+
+# Database local
+ferramental.db
+
+# Excel temporários gerados automaticamente (opcional)
+~$*.xlsx
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+
+# SQLite / dados locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# VS Code
+.vscode/

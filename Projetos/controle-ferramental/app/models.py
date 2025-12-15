@@ -1,64 +1,85 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Text
 from datetime import datetime
-from .database import Base
 
-class Usuario(Base):
-    __tablename__ = "usuarios"
-    id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, nullable=False)
-    tipo = Column(String, nullable=False)  # ENCARGADO, COLABORADOR etc.
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Text
+from sqlalchemy.orm import relationship
 
-class Obra(Base):
-    __tablename__ = "obras"
+from app.database import Base
+
+
+class Setor(Base):
+    __tablename__ = "setores"
+
     id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, nullable=False)
-    endereco = Column(String, nullable=True)
+    nome = Column(String, unique=True, nullable=False)
+
+    kits = relationship("Kit", back_populates="setor", cascade="all, delete-orphan")
+    encarregados = relationship("Encarregado", back_populates="setor", cascade="all, delete-orphan")
+
 
 class Item(Base):
     __tablename__ = "itens"
+
     id = Column(Integer, primary_key=True, index=True)
-    patrimonio = Column(String, unique=True, index=True, nullable=False)
-    descricao = Column(String, nullable=True)
-    status = Column(String, default="ATIVO")
+    patrimonio = Column(String, unique=True, nullable=False, index=True)
+    descricao = Column(String, nullable=False)
+
+    kit_itens = relationship("KitItem", back_populates="item", cascade="all, delete-orphan")
+
 
 class Kit(Base):
     __tablename__ = "kits"
+
     id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, nullable=False)
+    nome = Column(String, nullable=False, index=True)
+    tipo = Column(String, nullable=True)
+
+    setor_id = Column(Integer, ForeignKey("setores.id"), nullable=False)
+    setor = relationship("Setor", back_populates="kits")
+
+    itens = relationship("KitItem", back_populates="kit", cascade="all, delete-orphan")
+    checklists = relationship("ChecklistSemanal", back_populates="kit", cascade="all, delete-orphan")
+
 
 class KitItem(Base):
     __tablename__ = "kit_itens"
-    id = Column(Integer, primary_key=True, index=True)
-    kit_id = Column(Integer, ForeignKey("kits.id"))
-    item_id = Column(Integer, ForeignKey("itens.id"))
 
-class RetiradaKit(Base):
-    __tablename__ = "retiradas_kit"
     id = Column(Integer, primary_key=True, index=True)
-    kit_id = Column(Integer, ForeignKey("kits.id"))
-    encarregado_id = Column(Integer, ForeignKey("usuarios.id"))
-    obra_id = Column(Integer, ForeignKey("obras.id"))
-    data_hora = Column(DateTime, default=datetime.utcnow)
-    foto_inicial = Column(String, nullable=True)
-    latitude = Column(Float, nullable=True)
-    longitude = Column(Float, nullable=True)
+    kit_id = Column(Integer, ForeignKey("kits.id"), nullable=False)
+    item_id = Column(Integer, ForeignKey("itens.id"), nullable=False)
 
-class SubResponsabilidade(Base):
-    __tablename__ = "sub_responsabilidades"
+    quantidade = Column(Integer, nullable=False, default=1)
+
+    kit = relationship("Kit", back_populates="itens")
+    item = relationship("Item", back_populates="kit_itens")
+
+
+class Encarregado(Base):
+    __tablename__ = "encarregados"
+
     id = Column(Integer, primary_key=True, index=True)
-    retirada_id = Column(Integer, ForeignKey("retiradas_kit.id"))
-    item_id = Column(Integer, ForeignKey("itens.id"))
-    colaborador_nome = Column(String, nullable=False)
-    data_hora_repassado = Column(DateTime, default=datetime.utcnow)
-    data_hora_devolucao = Column(DateTime, nullable=True)
+    setor_id = Column(Integer, ForeignKey("setores.id"), nullable=False)
+
+    funcao = Column(String, nullable=False)  # Supervisor / Encarregado Turma / etc
+    nome = Column(String, nullable=False, index=True)
+    telefone = Column(String, nullable=True)
+
+    setor = relationship("Setor", back_populates="encarregados")
+    checklists = relationship("ChecklistSemanal", back_populates="encarregado", cascade="all, delete-orphan")
+
 
 class ChecklistSemanal(Base):
-    __tablename__ = "checklists_semanal"
+    __tablename__ = "checklists_semanais"
+
     id = Column(Integer, primary_key=True, index=True)
-    kit_id = Column(Integer, ForeignKey("kits.id"))
-    encarregado_id = Column(Integer, ForeignKey("usuarios.id"))
-    data_hora = Column(DateTime, default=datetime.utcnow)
-    foto = Column(String, nullable=True)
+
+    kit_id = Column(Integer, ForeignKey("kits.id"), nullable=False)
+    encarregado_id = Column(Integer, ForeignKey("encarregados.id"), nullable=False)
+
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+
     patrimonios_declarados = Column(Text, nullable=True)
+    data_hora = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    kit = relationship("Kit", back_populates="checklists")
+    encarregado = relationship("Encarregado", back_populates="checklists")
